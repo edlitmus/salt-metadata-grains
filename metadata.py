@@ -16,7 +16,7 @@ metadata server set `metadata_server_grains: True` in the minion config.
 
 import os
 
-import salt.utils.aws as metadata
+import salt.utils.aws
 import salt.utils.data
 import salt.utils.json
 import salt.utils.stringutils
@@ -26,7 +26,7 @@ def _search(prefix="latest/"):
     Recursively look up all grains in the metadata server
     """
     ret = {}
-    result = metadata.get_metadata(prefix)
+    result = salt.utils.aws.get_metadata(prefix)
     body = result.text
     for line in body.split("\n"):
         if line.endswith("/"):
@@ -42,7 +42,7 @@ def _search(prefix="latest/"):
             key, value = line.split("=")
             ret[value] = _search(prefix=os.path.join(prefix, key))
         else:
-            retdata = metadata.get_metadata(os.path.join(prefix, line)).text
+            retdata = salt.utils.aws.get_metadata(os.path.join(prefix, line)).text
             # (gtmanfred) This try except block is slightly faster than
             # checking if the string starts with a curly brace
             if isinstance(retdata, bytes):
@@ -56,8 +56,8 @@ def _search(prefix="latest/"):
                 ret[line] = retdata
     return salt.utils.data.decode(ret)
 
-def main():
-    ret = {}
-    ret['dynamic'] = _search('dynamic')
-    ret['meta-data'] = _search('meta-data')
-    return ret
+def metadata():
+    return {
+        "dynamic": _search("dynamic"),
+        "meta-data": _search("meta-data"),
+    }
